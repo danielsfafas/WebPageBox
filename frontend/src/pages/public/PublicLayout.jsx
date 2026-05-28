@@ -51,6 +51,9 @@ export default function PublicLayout() {
             <Link to="/paquetes" className="btn-primary text-sm" data-testid="nav-join-btn">
               Unirse Ahora
             </Link>
+            <Link to="/admin/login" title="Acceso administrador" className="text-white/40 hover:text-[#FFD700] transition-colors" data-testid="nav-admin-link">
+              <ShieldCheck size={20} />
+            </Link>
           </nav>
 
           <button
@@ -115,7 +118,9 @@ export default function PublicLayout() {
               {settings.twitter && <a href={settings.twitter} target="_blank" rel="noreferrer" className="text-white/70 hover:text-[#E63946]"><Twitter /></a>}
               {settings.youtube && <a href={settings.youtube} target="_blank" rel="noreferrer" className="text-white/70 hover:text-[#E63946]"><Youtube /></a>}
             </div>
-            <Link to="/admin/login" className="inline-block mt-6 text-xs text-white/40 hover:text-white">Acceso administrador</Link>
+            <Link to="/admin/login" className="inline-flex items-center gap-2 mt-6 text-sm text-white/70 hover:text-[#FFD700] border border-white/15 hover:border-[#FFD700]/50 rounded-sm px-3 py-2 transition-all" data-testid="footer-admin-link">
+              <ShieldCheck size={14} /> Acceso administrador
+            </Link>
           </div>
         </div>
         <div className="border-t border-white/5 py-4 text-center text-xs text-white/40">

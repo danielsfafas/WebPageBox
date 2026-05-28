@@ -57,6 +57,11 @@ export default function AdminLogin() {
           <ShieldAlert size={14} className="mt-0.5" />
           Únicamente personal autorizado. Las sesiones expiran en 12 horas.
         </div>
+        <div className="mt-4 text-[11px] glass p-3 rounded-sm text-white/60 leading-relaxed" data-testid="login-hint">
+          <div className="font-bold text-[#FFD700] uppercase tracking-widest text-[10px] mb-1">Credenciales por defecto</div>
+          Email: <span className="text-white">admin@boxinggym.com</span><br/>
+          Contraseña: <span className="text-white">admin123</span>
+        </div>
       </div>
     </div>
   );

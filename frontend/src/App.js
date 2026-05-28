@@ -1,53 +1,67 @@
-import { useEffect } from "react";
-import "@/App.css";
+import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import { Toaster } from "sonner";
+import "@/App.css";
+import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import Home from "@/pages/public/Home";
+import ProductsPage from "@/pages/public/ProductsPage";
+import EventsPage from "@/pages/public/EventsPage";
+import PackagesPage from "@/pages/public/PackagesPage";
+import ContactPage from "@/pages/public/ContactPage";
+import PaymentSuccess from "@/pages/public/PaymentSuccess";
+import PublicLayout from "@/pages/public/PublicLayout";
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
-
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
-};
+import AdminLogin from "@/pages/admin/AdminLogin";
+import AdminLayout from "@/pages/admin/AdminLayout";
+import AdminDashboard from "@/pages/admin/AdminDashboard";
+import AdminProducts from "@/pages/admin/AdminProducts";
+import AdminPackages from "@/pages/admin/AdminPackages";
+import AdminSubscribers from "@/pages/admin/AdminSubscribers";
+import AdminSubscriberDetail from "@/pages/admin/AdminSubscriberDetail";
+import AdminPayments from "@/pages/admin/AdminPayments";
+import AdminEvents from "@/pages/admin/AdminEvents";
+import AdminMessages from "@/pages/admin/AdminMessages";
+import AdminSettings from "@/pages/admin/AdminSettings";
 
 function App() {
   return (
-    <div className="App">
+    <AuthProvider>
       <BrowserRouter>
+        <Toaster theme="dark" position="top-right" richColors />
         <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/productos" element={<ProductsPage />} />
+            <Route path="/eventos" element={<EventsPage />} />
+            <Route path="/paquetes" element={<PackagesPage />} />
+            <Route path="/contacto" element={<ContactPage />} />
+            <Route path="/payment-success" element={<PaymentSuccess />} />
+          </Route>
+
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<AdminDashboard />} />
+            <Route path="productos" element={<AdminProducts />} />
+            <Route path="paquetes" element={<AdminPackages />} />
+            <Route path="suscriptores" element={<AdminSubscribers />} />
+            <Route path="suscriptores/:id" element={<AdminSubscriberDetail />} />
+            <Route path="pagos" element={<AdminPayments />} />
+            <Route path="eventos" element={<AdminEvents />} />
+            <Route path="mensajes" element={<AdminMessages />} />
+            <Route path="configuracion" element={<AdminSettings />} />
           </Route>
         </Routes>
       </BrowserRouter>
-    </div>
+    </AuthProvider>
   );
 }
 

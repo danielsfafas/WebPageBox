@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Outlet, NavLink, Link, useLocation } from "react-router-dom";
 import { useSettings } from "@/lib/utils-app";
-import { Menu, X, Instagram, Facebook, Twitter, Youtube } from "lucide-react";
+import { Menu, X, Instagram, Facebook, Twitter, Youtube, ShieldCheck } from "lucide-react";
 
 const links = [
   { to: "/", label: "Inicio" },

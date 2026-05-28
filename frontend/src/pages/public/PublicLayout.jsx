@@ -51,9 +51,6 @@ export default function PublicLayout() {
             <Link to="/paquetes" className="btn-primary text-sm" data-testid="nav-join-btn">
               Unirse Ahora
             </Link>
-            <Link to="/admin/login" title="Acceso administrador" className="text-white/40 hover:text-[#FFD700] transition-colors" data-testid="nav-admin-link">
-              <ShieldCheck size={20} />
-            </Link>
           </nav>
 
           <button

@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { fmtCurrency, useSettings } from "@/lib/utils-app";
 import { toast } from "sonner";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Clock, Loader2, MapPin } from "lucide-react";
+import OfferCountdown from "@/components/OfferCountdown";
 
 export default function PackagesPage() {
   const [packages, setPackages] = useState([]);
@@ -33,6 +34,27 @@ export default function PackagesPage() {
       <h1 className="font-display text-5xl md:text-7xl text-white mt-2">Paquetes & <span className="text-[#FFD700]">promociones</span></h1>
       <p className="text-white/60 mt-4 max-w-2xl">Encuentra el plan que se ajusta a tu nivel de entrenamiento. Inscripción única + cuota mensual.</p>
 
+      <div className="mt-8 glass p-6 rounded-sm max-w-2xl" data-testid="gym-hours-block">
+        <div className="flex items-start gap-4">
+          <div className="h-12 w-12 grid place-items-center bg-[#E63946]/20 rounded-sm shrink-0">
+            <Clock className="text-[#E63946]" size={24} />
+          </div>
+          <div>
+            <h2 className="font-display text-2xl text-white">Horario de atención</h2>
+            <p className="text-sm text-white/50 mt-1">Puedes entrenar en el gimnasio durante estos horarios:</p>
+            <div className="mt-3 text-white/85 whitespace-pre-line leading-relaxed">
+              {settings.gym_hours || "Consulta horarios en recepción o por contacto."}
+            </div>
+            {settings.address ? (
+              <p className="text-sm text-white/50 mt-3 flex items-start gap-2">
+                <MapPin size={16} className="text-[#FFD700] shrink-0 mt-0.5" />
+                {settings.address}
+              </p>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
       {packages.length === 0 ? (
         <div className="mt-12 glass p-10 text-center text-white/50">No hay paquetes activos por el momento.</div>
       ) : (
@@ -54,6 +76,11 @@ export default function PackagesPage() {
               {p.inscription_cost > 0 && (
                 <div className="text-xs text-white/40 mt-1">+ {fmtCurrency(p.inscription_cost, sym)} de inscripción única</div>
               )}
+              {p.duration_days ? (
+                <div className="text-xs text-white/50 mt-2">Duración del plan: {p.duration_days} días</div>
+              ) : null}
+
+              <OfferCountdown expiresAt={p.offer_expires_at} publicView />
 
               <ul className="mt-6 space-y-2 flex-1">
                 {(p.benefits || []).map((b, j) => (

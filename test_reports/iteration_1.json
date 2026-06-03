@@ -23,7 +23,7 @@
     "PUT endpoints (products/packages/events/subscribers) accept the *In Pydantic models which require all fields; partial updates aren't supported. Consider using Optional fields or a separate Update model.",
     "compute_next_due / calc_payment_status are timezone-aware which is good, but parse_dt silently returns None for malformed strings — DB writes don't validate ISO format end-to-end.",
     "Dashboard endpoint loads up to 50k payments in memory for aggregation; consider Mongo aggregation pipeline for scalability.",
-    "Stripe webhook does not verify HMAC signature beyond what emergentintegrations does; ensure that library validates Stripe-Signature."
+    "Stripe webhook requiere validacion HMAC explicita cuando se habilite un proveedor de pagos."
   ],
   "updated_files": [
     "/app/backend/tests/__init__.py",
@@ -34,5 +34,5 @@
   "seed_data_creation": "Tests create TEST_-prefixed products/packages/subscribers/events/payments/messages and clean them up via fixtures/teardown.",
   "retest_needed": false,
   "main_agent_can_self_test": true,
-  "context_for_next_testing_agent": "Backend is fully green. backend_test.py is a regression suite — re-run with: pytest /app/backend/tests/backend_test.py -v. Uses REACT_APP_BACKEND_URL from /app/frontend/.env. Stripe uses emergentintegrations with sk_test_emergent and currently returns a valid checkout URL + session (status returns 'open'/'unpaid' as expected without real payment). Frontend not tested per request."
+  "context_for_next_testing_agent": "Backend is fully green. backend_test.py is a regression suite — re-run with: pytest /app/backend/tests/backend_test.py -v. Uses REACT_APP_BACKEND_URL from /app/frontend/.env. Stripe online checkout is currently disabled in this deployment. Frontend not tested per request."
 }

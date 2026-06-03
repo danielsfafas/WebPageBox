@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { fmtDate, fileToBase64, fmtCurrency } from "@/lib/utils-app";
 import { ArrowLeft, Plus, Trash2, Upload, User, X, Camera, Activity, Calendar } from "lucide-react";
+import { openMercadoPagoCheckout, pollPaymentStatus } from "@/lib/mercadoPagoCheckout";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 const emptyRec = { weight_kg: "", height_cm: "", chest_cm: "", waist_cm: "", hip_cm: "", biceps_cm: "", thigh_cm: "", calf_cm: "", body_fat_pct: "", notes: "", date: new Date().toISOString().slice(0, 10) };
@@ -11,6 +12,7 @@ const emptyRec = { weight_kg: "", height_cm: "", chest_cm: "", waist_cm: "", hip
 export default function AdminSubscriberDetail() {
   const { id } = useParams();
   const [sub, setSub] = useState(null);
+  const [packages, setPackages] = useState([]);
   const [tab, setTab] = useState("info");
   const [recOpen, setRecOpen] = useState(false);
   const [rec, setRec] = useState(emptyRec);
@@ -18,9 +20,16 @@ export default function AdminSubscriberDetail() {
   const [mediaData, setMediaData] = useState({ data: "", type: "image", note: "", date: new Date().toISOString().slice(0, 10) });
   const [payOpen, setPayOpen] = useState(false);
   const [payForm, setPayForm] = useState({ amount: 0, method: "cash", payment_date: new Date().toISOString().slice(0, 10), period_days: 30, notes: "", type: "monthly" });
+  const [pkgOpen, setPkgOpen] = useState(false);
+  const [nextPackageId, setNextPackageId] = useState("");
+  const stopPollRef = useRef(null);
 
-  const load = () => api.get(`/admin/subscribers/${id}`).then(r => setSub(r.data));
-  useEffect(() => { load(); }, [id]);
+  const load = useCallback(() => api.get(`/admin/subscribers/${id}`).then(r => setSub(r.data)), [id]);
+  useEffect(() => {
+    load();
+    api.get("/admin/packages").then((r) => setPackages(r.data || []));
+    return () => stopPollRef.current?.();
+  }, [id, load]);
 
   if (!sub) return <div className="text-white/40">Cargando…</div>;
 
@@ -63,18 +72,72 @@ export default function AdminSubscriberDetail() {
   };
 
   const addPayment = async () => {
-    const body = {
-      ...payForm,
-      subscriber_id: id,
-      amount: Number(payForm.amount),
-      period_days: Number(payForm.period_days),
-      payment_date: new Date(payForm.payment_date).toISOString(),
-    };
-    await api.post("/admin/payments", body);
-    toast.success("Pago registrado");
-    setPayOpen(false);
-    setPayForm({ amount: 0, method: "cash", payment_date: new Date().toISOString().slice(0, 10), period_days: 30, notes: "", type: "monthly" });
-    load();
+    try {
+      if (payForm.method === "online") {
+        const { data } = await api.post("/admin/payments/checkout", {
+          subscriber_id: id,
+          type: payForm.type,
+          notes: payForm.notes,
+          origin_url: window.location.origin,
+        });
+        if (!data?.checkout_url || !data?.session_id) {
+          toast.error("No se pudo crear la sesion de pago");
+          return;
+        }
+        const opened = openMercadoPagoCheckout(data.checkout_url, data.session_id);
+        if (opened) {
+          toast.info("Mercado Pago en otra pestaña. Al pagar, el registro se guardará aquí automáticamente.");
+        } else {
+          toast.warning("Abre el enlace de pago en una nueva pestaña (ventanas emergentes bloqueadas).");
+          window.open(data.checkout_url, "_blank");
+        }
+        setPayOpen(false);
+        stopPollRef.current?.();
+        stopPollRef.current = pollPaymentStatus(
+          (sid) => api.get(`/payments/checkout/status/${sid}`).then((r) => r.data),
+          data.session_id,
+          {
+            onPaid: () => {
+              toast.success("Pago en línea confirmado y registrado");
+              load();
+            },
+            onFailed: () => toast.error("El pago no se completó"),
+            onTimeout: () => toast.info("Si ya pagó, recarga la página o intenta de nuevo."),
+          },
+        );
+        return;
+      }
+      const body = {
+        ...payForm,
+        subscriber_id: id,
+        amount: Number(payForm.amount),
+        period_days: Number(payForm.period_days),
+        payment_date: new Date(payForm.payment_date).toISOString(),
+      };
+      await api.post("/admin/payments", body);
+      toast.success("Pago registrado");
+      setPayOpen(false);
+      setPayForm({ amount: 0, method: "cash", payment_date: new Date().toISOString().slice(0, 10), period_days: 30, notes: "", type: "monthly" });
+      load();
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "No se pudo registrar el pago");
+    }
+  };
+
+  const schedulePackageChange = async () => {
+    if (!nextPackageId) {
+      toast.error("Selecciona un paquete");
+      return;
+    }
+    try {
+      await api.put(`/admin/subscribers/${id}/package-change`, { package_id: nextPackageId });
+      toast.success("Cambio de paquete programado para próximo ciclo");
+      setPkgOpen(false);
+      setNextPackageId("");
+      load();
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "No se pudo programar el cambio");
+    }
   };
 
   const chartData = (sub.progress_records || []).map(r => ({
@@ -101,11 +164,13 @@ export default function AdminSubscriberDetail() {
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
             {sub.package && <span className="badge-status badge-valid">{sub.package.name}</span>}
+            {sub.pending_package && <span className="badge-status badge-soon">Siguiente ciclo: {sub.pending_package.name}</span>}
             <span className={`badge-status ${sub.payment_status === "valid" ? "badge-valid" : sub.payment_status === "expiring_soon" ? "badge-soon" : sub.payment_status === "overdue" ? "badge-overdue" : "bg-white/5 text-white/40 border border-white/10"}`}>
               {sub.payment_status === "valid" ? "Al día" : sub.payment_status === "expiring_soon" ? "Por vencer" : sub.payment_status === "overdue" ? "Vencido" : "Sin pagos"}
             </span>
           </div>
         </div>
+        <button onClick={() => { setNextPackageId(sub.pending_package?.id || ""); setPkgOpen(true); }} className="btn-outline text-xs py-2">Cambiar paquete</button>
       </div>
 
       <div className="mt-6 border-b border-white/5 flex gap-1 overflow-x-auto">
@@ -135,6 +200,9 @@ export default function AdminSubscriberDetail() {
               ["Contacto emergencia", sub.emergency_contact_name],
               ["Tel. emergencia", sub.emergency_contact_phone],
               ["Objetivo", sub.fitness_goal || "—"],
+              ["Vencimiento", fmtDate(sub.next_due_date)],
+              ["Beneficios paquete", (sub.package?.benefits || []).length ? (sub.package.benefits.join(", ")) : "—"],
+              ["Cambio pendiente", sub.pending_package?.name || "Sin cambio programado"],
             ].map(([k, v], i) => (
               <div key={i} className="glass p-4 rounded-sm">
                 <div className="text-xs uppercase tracking-widest text-white/40">{k}</div>
@@ -153,8 +221,8 @@ export default function AdminSubscriberDetail() {
             {chartData.length > 1 && (
               <div className="glass p-4 rounded-sm mb-4">
                 <div className="text-xs uppercase tracking-widest text-white/40 mb-2"><Activity className="inline" size={12} /> Evolución</div>
-                <div className="h-72">
-                  <ResponsiveContainer>
+                <div className="h-72 min-w-0">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                     <LineChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#222" />
                       <XAxis dataKey="date" tick={{ fill: "#888", fontSize: 11 }} />
@@ -288,11 +356,41 @@ export default function AdminSubscriberDetail() {
           <div className="grid md:grid-cols-2 gap-3">
             <Field label="Tipo"><select className="input-dark mt-1" value={payForm.type} onChange={(e) => setPayForm({ ...payForm, type: e.target.value })}><option value="monthly">Mensualidad</option><option value="inscription">Inscripción</option></select></Field>
             <Field label="Método"><select className="input-dark mt-1" value={payForm.method} onChange={(e) => setPayForm({ ...payForm, method: e.target.value })}><option value="cash">Efectivo</option><option value="transfer">Transferencia</option><option value="online">En línea</option></select></Field>
-            <Field label="Monto"><input type="number" step="0.01" className="input-dark mt-1" value={payForm.amount} onChange={(e) => setPayForm({ ...payForm, amount: e.target.value })} /></Field>
+            <Field label="Monto">
+              <input
+                type="number"
+                step="0.01"
+                className="input-dark mt-1"
+                value={payForm.method === "online" ? (sub?.package?.monthly_cost || 0) : payForm.amount}
+                onChange={(e) => setPayForm({ ...payForm, amount: e.target.value })}
+                disabled={payForm.method === "online"}
+              />
+            </Field>
             <Field label="Fecha de pago"><input type="date" className="input-dark mt-1" value={payForm.payment_date} onChange={(e) => setPayForm({ ...payForm, payment_date: e.target.value })} /></Field>
             <Field label="Periodo (días)"><input type="number" className="input-dark mt-1" value={payForm.period_days} onChange={(e) => setPayForm({ ...payForm, period_days: e.target.value })} /></Field>
           </div>
           <Field label="Notas"><textarea rows={2} className="input-dark mt-1 resize-none" value={payForm.notes} onChange={(e) => setPayForm({ ...payForm, notes: e.target.value })} /></Field>
+          {payForm.method === "online" && (
+            <p className="text-xs text-white/60">
+              Se abrirá Mercado Pago en otra pestaña. No hace falta volver desde la pantalla verde: al acreditarse el cobro, el pago se registra aquí solo.
+            </p>
+          )}
+        </Modal>
+      )}
+
+      {pkgOpen && (
+        <Modal title="Programar cambio de paquete" onClose={() => setPkgOpen(false)} onSave={schedulePackageChange}>
+          <Field label="Nuevo paquete (aplica en próximo ciclo)">
+            <select className="input-dark mt-1" value={nextPackageId} onChange={(e) => setNextPackageId(e.target.value)}>
+              <option value="">Selecciona…</option>
+              {packages.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </Field>
+          <p className="text-xs text-white/60">
+            El cambio no modifica el ciclo actual. Se aplicará al registrar el siguiente pago mensual.
+          </p>
         </Modal>
       )}
     </div>

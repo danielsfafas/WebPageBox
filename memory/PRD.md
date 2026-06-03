@@ -18,7 +18,7 @@ Aplicación web full-stack para un gimnasio de boxeo con sitio público + panel 
 - Frontend: React 19 + react-router + Tailwind + shadcn + Recharts + sonner
 - DB: MongoDB, UUID strings as IDs, ISO datetime strings
 - Auth: JWT Bearer in `Authorization` header, stored in localStorage
-- Stripe: emergentintegrations with `sk_test_emergent`, polling status
+- Stripe: checkout en linea deshabilitado en este despliegue, usando registro manual y polling local
 
 ## Implemented (May 28, 2026)
 ### Sitio público

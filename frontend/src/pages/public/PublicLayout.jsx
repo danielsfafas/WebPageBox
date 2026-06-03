@@ -48,6 +48,9 @@ export default function PublicLayout() {
                 {l.label}
               </NavLink>
             ))}
+            <Link to="/mi/login" className="btn-outline text-sm" data-testid="nav-user-login-btn">
+              Login usuario
+            </Link>
             <Link to="/paquetes" className="btn-primary text-sm" data-testid="nav-join-btn">
               Unirse Ahora
             </Link>
@@ -76,6 +79,9 @@ export default function PublicLayout() {
                 {l.label}
               </NavLink>
             ))}
+            <Link to="/mi/login" className="btn-outline text-sm w-full justify-center" onClick={() => setOpen(false)}>
+              Login usuario
+            </Link>
             <Link to="/paquetes" className="btn-primary text-sm w-full justify-center" onClick={() => setOpen(false)}>
               Unirse Ahora
             </Link>

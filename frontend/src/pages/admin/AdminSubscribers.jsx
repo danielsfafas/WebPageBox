@@ -2,14 +2,57 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "@/lib/api";
 import { toast } from "sonner";
-import { fmtDate, fileToBase64 } from "@/lib/utils-app";
-import { Plus, Pencil, Trash2, Search, X, Upload, User, Eye } from "lucide-react";
+import { fmtDate } from "@/lib/utils-app";
+import ProfilePhotoField from "@/components/ProfilePhotoField";
+import { Plus, Pencil, Trash2, Search, X, User, Eye } from "lucide-react";
 
 const empty = {
   full_name: "", birth_date: "", gender: "", phone: "", email: "",
   emergency_contact_name: "", emergency_contact_phone: "", profile_photo: null,
-  package_id: "", active: true, fitness_goal: "",
+  package_id: "", active: true, fitness_goal: "", username: "", password: "", password_confirm: "",
 };
+
+const toSubscriberPayload = (form, { isEdit }) => {
+  const payload = {
+    full_name: form.full_name?.trim() || "",
+    birth_date: form.birth_date || null,
+    gender: form.gender || "",
+    phone: form.phone || "",
+    email: form.email || "",
+    emergency_contact_name: form.emergency_contact_name || "",
+    emergency_contact_phone: form.emergency_contact_phone || "",
+    profile_photo: form.profile_photo || null,
+    package_id: form.package_id || null,
+    active: Boolean(form.active),
+    fitness_goal: form.fitness_goal || "",
+    username: (form.username || "").trim().toLowerCase(),
+  };
+  const pwd = (form.password || "").trim();
+  if (isEdit) {
+    if (pwd) payload.password = pwd;
+  } else {
+    payload.password = pwd;
+  }
+  return payload;
+};
+
+const subscriberToForm = (s) => ({
+  ...empty,
+  full_name: s.full_name || "",
+  birth_date: s.birth_date || "",
+  gender: s.gender || "",
+  phone: s.phone || "",
+  email: s.email || "",
+  emergency_contact_name: s.emergency_contact_name || "",
+  emergency_contact_phone: s.emergency_contact_phone || "",
+  profile_photo: s.profile_photo || null,
+  package_id: s.package_id || "",
+  active: s.active !== false,
+  fitness_goal: s.fitness_goal || "",
+  username: s.username || "",
+  password: "",
+  password_confirm: "",
+});
 
 export default function AdminSubscribers() {
   const [items, setItems] = useState([]);
@@ -24,13 +67,32 @@ export default function AdminSubscribers() {
   useEffect(() => { load(); api.get("/admin/packages").then(r => setPackages(r.data)); }, []);
 
   const startNew = () => { setForm(empty); setEditing(null); setOpen(true); };
-  const startEdit = (s) => { setForm({ ...empty, ...s }); setEditing(s.id); setOpen(true); };
+  const startEdit = (s) => { setForm(subscriberToForm(s)); setEditing(s.id); setOpen(true); };
 
   const save = async () => {
+    const pwd = (form.password || "").trim();
+    const pwdConfirm = (form.password_confirm || "").trim();
+    if (!editing && !pwd) {
+      toast.error("La contraseña es obligatoria para nuevos suscriptores");
+      return;
+    }
+    if (pwd && pwd.length < 4) {
+      toast.error("La contraseña debe tener al menos 4 caracteres");
+      return;
+    }
+    if (pwd && pwd !== pwdConfirm) {
+      toast.error("Las contraseñas no coinciden");
+      return;
+    }
+    const payload = toSubscriberPayload(form, { isEdit: Boolean(editing) });
+    if (!(payload.username || "").trim()) {
+      toast.error("El usuario de acceso es obligatorio");
+      return;
+    }
     try {
-      if (editing) await api.put(`/admin/subscribers/${editing}`, form);
-      else await api.post("/admin/subscribers", form);
-      toast.success("Suscriptor guardado");
+      if (editing) await api.put(`/admin/subscribers/${editing}`, payload);
+      else await api.post("/admin/subscribers", payload);
+      toast.success(editing && pwd ? "Suscriptor y contraseña actualizados" : "Suscriptor guardado");
       setOpen(false);
       load();
     } catch (e) { toast.error(e?.response?.data?.detail || "Error"); }
@@ -41,12 +103,6 @@ export default function AdminSubscribers() {
     await api.delete(`/admin/subscribers/${id}`);
     toast.success("Eliminado");
     load();
-  };
-
-  const onPhoto = async (f) => {
-    if (!f) return;
-    const b64 = await fileToBase64(f);
-    setForm((s) => ({ ...s, profile_photo: b64 }));
   };
 
   const statusClass = (s) => ({
@@ -137,15 +193,10 @@ export default function AdminSubscribers() {
               <button onClick={() => setOpen(false)} className="text-white/40 hover:text-white"><X /></button>
             </div>
             <div className="p-5 space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="h-20 w-20 rounded-full overflow-hidden bg-white/5 grid place-items-center">
-                  {form.profile_photo ? <img src={form.profile_photo} className="h-full w-full object-cover" /> : <User className="text-white/30" />}
-                </div>
-                <label className="btn-outline text-xs py-2 cursor-pointer">
-                  <Upload size={12} /> Foto perfil
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => onPhoto(e.target.files?.[0])} />
-                </label>
-              </div>
+              <ProfilePhotoField
+                value={form.profile_photo}
+                onChange={(profile_photo) => setForm((s) => ({ ...s, profile_photo }))}
+              />
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs uppercase tracking-widest text-white/60">Nombre completo</label>
@@ -172,6 +223,38 @@ export default function AdminSubscribers() {
                   <label className="text-xs uppercase tracking-widest text-white/60">Email</label>
                   <input type="email" className="input-dark mt-1" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
                 </div>
+                <div>
+                  <label className="text-xs uppercase tracking-widest text-white/60">Usuario de acceso</label>
+                  <input className="input-dark mt-1" value={form.username || ""} onChange={(e) => setForm({ ...form, username: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-widest text-white/60">{editing ? "Nueva contraseña" : "Contraseña"}</label>
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    className="input-dark mt-1"
+                    placeholder={editing ? "Dejar vacío para no cambiar" : ""}
+                    value={form.password || ""}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  />
+                  {editing && (
+                    <p className="text-[10px] text-white/40 mt-1">Completa solo si quieres cambiar la contraseña del portal /mi</p>
+                  )}
+                </div>
+                {(form.password || !editing) && (
+                  <div>
+                    <label className="text-xs uppercase tracking-widest text-white/60">
+                      {editing ? "Confirmar nueva contraseña" : "Confirmar contraseña"}
+                    </label>
+                    <input
+                      type="password"
+                      autoComplete="new-password"
+                      className="input-dark mt-1"
+                      value={form.password_confirm || ""}
+                      onChange={(e) => setForm({ ...form, password_confirm: e.target.value })}
+                    />
+                  </div>
+                )}
                 <div>
                   <label className="text-xs uppercase tracking-widest text-white/60">Contacto emergencia (nombre)</label>
                   <input className="input-dark mt-1" value={form.emergency_contact_name} onChange={(e) => setForm({ ...form, emergency_contact_name: e.target.value })} />

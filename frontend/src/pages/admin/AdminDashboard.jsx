@@ -50,8 +50,8 @@ export default function AdminDashboard() {
         {stats.package_breakdown?.length === 0 ? (
           <div className="text-white/40 py-12 text-center">Aún no hay datos de pagos.</div>
         ) : (
-          <div className="h-72">
-            <ResponsiveContainer>
+          <div className="h-72 min-w-0">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={stats.package_breakdown}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#222" />
                 <XAxis dataKey="name" tick={{ fill: "#888", fontSize: 12 }} />

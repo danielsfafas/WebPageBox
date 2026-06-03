@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSettings } from "@/lib/utils-app";
 import {
   LayoutDashboard,
   Package,
@@ -13,6 +14,7 @@ import {
   Box,
   Menu,
   X,
+  ExternalLink,
 } from "lucide-react";
 
 const items = [
@@ -30,6 +32,16 @@ export default function AdminLayout() {
   const { logout, user } = useAuth();
   const nav = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const settings = useSettings();
+  const gymName = settings.gym_name || "BOXING GYM";
+  const logo = settings.logo || "";
+  const logoFallback = gymName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase() || "BG";
 
   const doLogout = () => {
     logout();
@@ -44,9 +56,17 @@ export default function AdminLayout() {
         data-testid="admin-sidebar"
       >
         <div className="h-16 px-5 flex items-center gap-2 border-b border-white/5">
-          <div className="h-9 w-9 grid place-items-center bg-[#E63946] text-black font-display text-xl rounded-sm">IF</div>
-          <div>
-            <div className="font-display text-xl text-white leading-none">IRONFIST</div>
+          <div className="h-9 w-9 grid place-items-center bg-[#E63946] text-black font-display text-xl rounded-sm overflow-hidden">
+            {logo ? (
+              <img src={logo} alt="Logo del gimnasio" className="h-full w-full object-cover" />
+            ) : (
+              logoFallback
+            )}
+          </div>
+          <div className="min-w-0">
+            <div className="font-display text-xl text-white leading-none truncate" title={gymName}>
+              {gymName}
+            </div>
             <div className="text-[10px] text-white/40 uppercase tracking-widest">Admin</div>
           </div>
         </div>
@@ -72,6 +92,9 @@ export default function AdminLayout() {
         </nav>
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/5">
           <div className="text-xs text-white/40 truncate">{user?.email}</div>
+          <a href="/" target="_blank" rel="noreferrer" className="btn-primary w-full justify-center mt-3 text-xs py-2" data-testid="go-store-btn">
+            <ExternalLink size={14} /> Ir a la tienda
+          </a>
           <button onClick={doLogout} className="btn-outline w-full justify-center mt-3 text-xs py-2" data-testid="logout-btn">
             <LogOut size={14} /> Salir
           </button>

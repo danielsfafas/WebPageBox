@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { toast } from "sonner";
-import { fmtCurrency } from "@/lib/utils-app";
+import { fmtCurrency, getOfferTimeLeft } from "@/lib/utils-app";
+import OfferCountdown from "@/components/OfferCountdown";
 import { Plus, Pencil, Trash2, X, BarChart3 } from "lucide-react";
 
 const empty = {
   name: "", description: "", inscription_cost: 0, monthly_cost: 0,
-  duration: "monthly", duration_days: 30, benefits: [], active: true,
+  duration: "monthly", duration_days: 30, offer_expires_at: null, benefits: [], active: true,
 };
 
 export default function AdminPackages() {
@@ -17,9 +18,16 @@ export default function AdminPackages() {
   const [benefitInput, setBenefitInput] = useState("");
   const [analyticsOpen, setAnalyticsOpen] = useState(null);
   const [analytics, setAnalytics] = useState(null);
+  const [now, setNow] = useState(Date.now());
 
   const load = () => api.get("/admin/packages").then(r => setItems(r.data));
   useEffect(() => { load(); }, []);
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const timeLeft = (isoDate) => getOfferTimeLeft(isoDate, now);
 
   const startNew = () => { setForm(empty); setEditing(null); setOpen(true); };
   const startEdit = (p) => { setForm({ ...empty, ...p }); setEditing(p.id); setOpen(true); };
@@ -61,9 +69,14 @@ export default function AdminPackages() {
       <div className="mt-6 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
         {items.map(p => (
           <div key={p.id} className="glass p-5 rounded-sm" data-testid="package-card-admin">
+            {(() => {
+              const left = timeLeft(p.offer_expires_at);
+              const isActive = p.active && !(left && left.expired);
+              return (
+                <>
             <div className="flex justify-between items-start">
               <div className="font-display text-2xl text-white">{p.name}</div>
-              <span className={`badge-status ${p.active ? "badge-valid" : "badge-overdue"}`}>{p.active ? "Activo" : "Inactivo"}</span>
+              <span className={`badge-status ${isActive ? "badge-valid" : "badge-overdue"}`}>{isActive ? "Activo" : "Inactivo"}</span>
             </div>
             <p className="text-sm text-white/60 mt-1">{p.description}</p>
             <div className="mt-3 flex gap-4">
@@ -77,9 +90,10 @@ export default function AdminPackages() {
               </div>
               <div>
                 <div className="text-[10px] uppercase tracking-widest text-white/40">Duración</div>
-                <div className="text-white font-display text-xl">{p.duration_days}d</div>
+                <div className="text-white font-display text-xl">{p.duration_days} días</div>
               </div>
             </div>
+            <OfferCountdown expiresAt={p.offer_expires_at} />
             <ul className="mt-3 space-y-1 max-h-24 overflow-auto">
               {(p.benefits || []).map((b, i) => <li key={i} className="text-xs text-white/60">▸ {b}</li>)}
             </ul>
@@ -88,6 +102,9 @@ export default function AdminPackages() {
               <button onClick={() => startEdit(p)} className="btn-outline text-xs py-1.5"><Pencil size={12} /> Editar</button>
               <button onClick={() => del(p.id)} className="text-red-400 ml-auto"><Trash2 size={14} /></button>
             </div>
+                </>
+              );
+            })()}
           </div>
         ))}
         {items.length === 0 && <div className="glass p-10 text-center text-white/40 md:col-span-3">No hay paquetes</div>}
@@ -132,6 +149,15 @@ export default function AdminPackages() {
                 <div>
                   <label className="text-xs uppercase tracking-widest text-white/60">Días duración</label>
                   <input type="number" className="input-dark mt-1" value={form.duration_days} onChange={(e) => setForm({ ...form, duration_days: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-widest text-white/60">Expira oferta</label>
+                  <input
+                    type="datetime-local"
+                    className="input-dark mt-1"
+                    value={form.offer_expires_at ? form.offer_expires_at.slice(0, 16) : ""}
+                    onChange={(e) => setForm({ ...form, offer_expires_at: e.target.value ? new Date(e.target.value).toISOString() : null })}
+                  />
                 </div>
                 <div>
                   <label className="text-xs uppercase tracking-widest text-white/60">Estado</label>

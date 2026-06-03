@@ -2,9 +2,10 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronRight, Trophy, Dumbbell, Flame, Users } from "lucide-react";
 import api from "@/lib/api";
-import { fmtCurrency, fmtDate } from "@/lib/utils-app";
+import { fmtCurrency, fmtDate, useSettings } from "@/lib/utils-app";
+import OfferCountdown from "@/components/OfferCountdown";
+import HeroCarousel from "@/components/HeroCarousel";
 
-const HERO_BG = "https://static.prod-images.emergentagent.com/jobs/e2c0434e-68fa-40bb-b6db-09bafec84fbd/images/4c0d0c8c1583bb15ee9208400f5c5363e011b669fd2dd23b2b0ea96d459dd578.png";
 const GYM_INTERIOR = "https://images.pexels.com/photos/5750886/pexels-photo-5750886.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940";
 
 function Countdown({ target }) {
@@ -36,6 +37,7 @@ function Countdown({ target }) {
 }
 
 export default function Home() {
+  const settings = useSettings();
   const [packages, setPackages] = useState([]);
   const [events, setEvents] = useState([]);
 
@@ -51,12 +53,12 @@ export default function Home() {
     <div data-testid="hero-section">
       {/* HERO */}
       <section className="relative min-h-[88vh] overflow-hidden flex items-center">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${HERO_BG})` }}
+        <HeroCarousel
+          slides={settings.hero_carousel_slides}
+          intervalSec={settings.hero_carousel_interval_sec}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/70 to-black/30" />
-        <div className="absolute inset-0 noise" />
+        <div className="absolute inset-0 z-[2] bg-gradient-to-r from-black/95 via-black/70 to-black/30" />
+        <div className="absolute inset-0 z-[2] noise" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 py-20">
           <div className="max-w-3xl">
@@ -127,6 +129,7 @@ export default function Home() {
                 {p.inscription_cost > 0 && (
                   <div className="text-xs text-white/40 mt-1">+ {fmtCurrency(p.inscription_cost)} inscripción</div>
                 )}
+                <OfferCountdown expiresAt={p.offer_expires_at} publicView />
                 <ul className="mt-6 space-y-2">
                   {(p.benefits || []).slice(0, 5).map((b, j) => (
                     <li key={j} className="text-sm text-white/70 flex gap-2"><span className="text-[#E63946]">▸</span> {b}</li>

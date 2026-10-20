@@ -23,7 +23,14 @@ export default function PublicLayout() {
         <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2" data-testid="brand-link">
             {settings.logo ? (
-              <img src={settings.logo} alt={`${settings.gym_name || 'Box de CrossFit'} Logo`} className="h-9 w-9 object-cover rounded-sm" />
+              <img 
+                src={settings.logo} 
+                alt={`${settings.gym_name || 'Box de CrossFit'} Logo`} 
+                className="h-9 w-9 object-cover rounded-sm" 
+                width="36"
+                height="36"
+                fetchpriority="high"
+              />
             ) : (
               <div className="h-9 w-9 grid place-items-center bg-[#E63946] text-black font-display text-xl rounded-sm">
                 IF

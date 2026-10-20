@@ -22,6 +22,34 @@
         Learn how to configure a non-root public URL by running `npm run build`.
         -->
         <title>Box de CrossFit y Entrenamiento Funcional</title>
+        <script>
+          // Early settings load from cache to avoid flash of default content
+          (function() {
+            try {
+              var cached = localStorage.getItem('gym_settings_cache');
+              if (cached) {
+                var settings = JSON.parse(cached);
+                if (settings.gym_name) {
+                  document.title = settings.gym_name;
+                }
+                if (settings.logo) {
+                  // Preload logo
+                  var preload = document.createElement('link');
+                  preload.rel = 'preload';
+                  preload.as = 'image';
+                  preload.href = settings.logo;
+                  preload.fetchpriority = 'high';
+                  document.head.appendChild(preload);
+                  // Set favicon
+                  var favicon = document.createElement('link');
+                  favicon.rel = 'icon';
+                  favicon.href = settings.logo;
+                  document.head.appendChild(favicon);
+                }
+              }
+            } catch(e) {}
+          })();
+        </script>
         <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);</script>
     </head>
     <body>

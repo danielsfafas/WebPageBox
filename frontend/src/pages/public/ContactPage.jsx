@@ -3,11 +3,23 @@ import api from "@/lib/api";
 import { toast } from "sonner";
 import { useSettings } from "@/lib/utils-app";
 import { MapPin, Phone, Mail, Send } from "lucide-react";
+import { useSEO } from "@/hooks/useSEO";
 
 export default function ContactPage() {
   const settings = useSettings();
   const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
   const [loading, setLoading] = useState(false);
+
+  const gymCity = settings.address ? settings.address.split(',').pop()?.trim() : '';
+  const title = `Contacto - ${settings.gym_name || 'Box de CrossFit'}`;
+  const description = `Contáctanos en ${settings.gym_name || 'Box de CrossFit'} ${gymCity ? `en ${gymCity}` : ''}. Estamos aquí para ayudarte. ${settings.phone ? `Tel: ${settings.phone}` : ''}`;
+
+  useSEO({
+    title,
+    description,
+    canonical: window.location.origin + '/contacto',
+    ogImage: settings.logo
+  });
 
   const submit = async (e) => {
     e.preventDefault();
@@ -30,7 +42,10 @@ export default function ContactPage() {
   return (
     <section className="max-w-7xl mx-auto px-4 md:px-8 py-16">
       <div className="text-xs uppercase tracking-[0.3em] text-[#E63946]">Contacto</div>
-      <h1 className="font-display text-5xl md:text-7xl text-white mt-2">Hablemos <span className="text-[#FFD700]">cara a cara</span></h1>
+      <h1 className="font-display text-5xl md:text-7xl text-white mt-2">
+        <span className="sr-only">{settings.gym_name || 'Box de CrossFit'} - </span>
+        Hablemos <span className="text-[#FFD700]">cara a cara</span>
+      </h1>
 
       <div className="mt-12 grid md:grid-cols-2 gap-10">
         <form onSubmit={submit} className="glass p-8 rounded-sm space-y-4" data-testid="contact-form">

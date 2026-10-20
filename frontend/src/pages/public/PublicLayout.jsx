@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Outlet, NavLink, Link, useLocation } from "react-router-dom";
 import { useSettings } from "@/lib/utils-app";
 import { Menu, X, Instagram, Facebook, Twitter, Youtube, ShieldCheck } from "lucide-react";
+import { GymStructuredData } from "@/components/StructuredData";
 
 const links = [
   { to: "/", label: "Inicio" },
@@ -17,11 +18,12 @@ export default function PublicLayout() {
   const loc = useLocation();
   return (
     <div className="min-h-screen flex flex-col" data-testid="public-layout">
+      <GymStructuredData settings={settings} />
       <header className="sticky top-0 z-50 glass-strong border-b border-white/10" data-testid="public-navbar">
         <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2" data-testid="brand-link">
             {settings.logo ? (
-              <img src={settings.logo} alt="logo" className="h-9 w-9 object-cover rounded-sm" />
+              <img src={settings.logo} alt={`${settings.gym_name || 'Box de CrossFit'} Logo`} className="h-9 w-9 object-cover rounded-sm" />
             ) : (
               <div className="h-9 w-9 grid place-items-center bg-[#E63946] text-black font-display text-xl rounded-sm">
                 IF

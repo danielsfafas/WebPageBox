@@ -4,12 +4,24 @@ import { fmtCurrency, useSettings } from "@/lib/utils-app";
 import { toast } from "sonner";
 import { Check, Clock, Loader2, MapPin } from "lucide-react";
 import OfferCountdown from "@/components/OfferCountdown";
+import { useSEO } from "@/hooks/useSEO";
 
 export default function PackagesPage() {
   const [packages, setPackages] = useState([]);
   const [paying, setPaying] = useState(null);
   const settings = useSettings();
   const sym = settings.currency_symbol || "$";
+
+  const gymCity = settings.address ? settings.address.split(',').pop()?.trim() : '';
+  const title = `Paquetes y Membresías - ${settings.gym_name || 'Box de CrossFit'}`;
+  const description = `Conoce nuestros paquetes y membresías de ${settings.gym_name || 'Box de CrossFit'} ${gymCity ? `en ${gymCity}` : ''}. Planes mensuales, trimestrales y anuales con los mejores precios.`;
+
+  useSEO({
+    title,
+    description,
+    canonical: window.location.origin + '/paquetes',
+    ogImage: settings.logo
+  });
 
   useEffect(() => { api.get("/packages").then(r => setPackages(r.data)).catch(() => {}); }, []);
 
@@ -31,7 +43,10 @@ export default function PackagesPage() {
   return (
     <section className="max-w-7xl mx-auto px-4 md:px-8 py-16">
       <div className="text-xs uppercase tracking-[0.3em] text-[#E63946]">Membresías</div>
-      <h1 className="font-display text-5xl md:text-7xl text-white mt-2">Paquetes & <span className="text-[#FFD700]">promociones</span></h1>
+      <h1 className="font-display text-5xl md:text-7xl text-white mt-2">
+        <span className="sr-only">{settings.gym_name || 'Box de CrossFit'} - </span>
+        Paquetes & <span className="text-[#FFD700]">promociones</span>
+      </h1>
       <p className="text-white/60 mt-4 max-w-2xl">Encuentra el plan que se ajusta a tu nivel de entrenamiento. Inscripción única + cuota mensual.</p>
 
       <div className="mt-8 glass p-6 rounded-sm max-w-2xl" data-testid="gym-hours-block">

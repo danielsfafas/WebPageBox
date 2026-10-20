@@ -5,6 +5,7 @@ import api from "@/lib/api";
 import { fmtCurrency, fmtDate, useSettings } from "@/lib/utils-app";
 import OfferCountdown from "@/components/OfferCountdown";
 import HeroCarousel from "@/components/HeroCarousel";
+import { useSEO } from "@/hooks/useSEO";
 
 const GYM_INTERIOR = "https://images.pexels.com/photos/5750886/pexels-photo-5750886.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940";
 
@@ -41,6 +42,17 @@ export default function Home() {
   const [packages, setPackages] = useState([]);
   const [events, setEvents] = useState([]);
 
+  const gymCity = settings.address ? settings.address.split(',').pop()?.trim() : '';
+  const title = `${settings.gym_name || 'Box de CrossFit'} ${gymCity ? `- ${gymCity}` : ''}`;
+  const description = `${settings.gym_name || 'Box de CrossFit'} ${gymCity ? `en ${gymCity}` : ''} - CrossFit, entrenamiento funcional, clases grupales y entrenamiento personalizado. ¡Únete ahora!`;
+
+  useSEO({
+    title,
+    description,
+    canonical: window.location.origin + '/',
+    ogImage: settings.logo
+  });
+
   useEffect(() => {
     api.get("/packages").then(r => setPackages(r.data.slice(0, 3))).catch(() => {});
     api.get("/events").then(r => {
@@ -66,6 +78,7 @@ export default function Home() {
               <Flame size={14} /> Desafía tus límites
             </div>
             <h1 className="font-display text-6xl md:text-8xl leading-[0.9] uppercase text-white">
+              <span className="sr-only">{settings.gym_name || 'Box de CrossFit'} {gymCity ? `en ${gymCity}` : ''} - </span>
               Forja al <span className="text-[#E63946]">campeón</span><br/>que llevas dentro
             </h1>
             <p className="mt-6 text-lg text-white/70 max-w-xl">

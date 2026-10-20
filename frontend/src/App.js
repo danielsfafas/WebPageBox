@@ -52,9 +52,34 @@ function App() {
       document.head.appendChild(favicon);
     }
     favicon.setAttribute("href", logo || `${process.env.PUBLIC_URL}/favicon.ico`);
+
+    // Preload logo for faster loading
+    if (logo) {
+      let preload = document.querySelector("link[rel='preload'][as='image'][data-logo='true']");
+      if (!preload) {
+        preload = document.createElement("link");
+        preload.setAttribute("rel", "preload");
+        preload.setAttribute("as", "image");
+        preload.setAttribute("data-logo", "true");
+        document.head.appendChild(preload);
+      }
+      preload.setAttribute("href", logo);
+      preload.setAttribute("fetchpriority", "high");
+    }
   };
 
   useEffect(() => {
+    // Try to apply cached settings immediately
+    try {
+      const cached = localStorage.getItem("gym_settings_cache");
+      if (cached) {
+        applyAppSettings(JSON.parse(cached));
+      }
+    } catch (e) {
+      // Ignore cache errors
+    }
+
+    // Fetch fresh settings in background
     api.get("/settings")
       .then((r) => {
         applyAppSettings(r?.data || {});

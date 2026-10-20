@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import api from "@/lib/api";
 import { fmtCurrency, useSettings } from "@/lib/utils-app";
 import { Search, Tag, Youtube } from "lucide-react";
+import { useSEO } from "@/hooks/useSEO";
 
 const ytEmbed = (url) => {
   if (!url) return null;
@@ -17,6 +18,16 @@ export default function ProductsPage() {
   const settings = useSettings();
   const sym = settings.currency_symbol || "$";
 
+  const title = `Productos - ${settings.gym_name || 'Box de CrossFit'}`;
+  const description = `Explora nuestra tienda de productos de ${settings.gym_name || 'Box de CrossFit'}. Equipo de entrenamiento, suplementos, ropa deportiva y más.`;
+
+  useSEO({
+    title,
+    description,
+    canonical: window.location.origin + '/productos',
+    ogImage: settings.logo
+  });
+
   useEffect(() => { api.get("/products").then(r => setItems(r.data)).catch(() => {}); }, []);
 
   const categories = useMemo(() => Array.from(new Set(items.map(i => i.category).filter(Boolean))), [items]);
@@ -31,7 +42,10 @@ export default function ProductsPage() {
   return (
     <section className="max-w-7xl mx-auto px-4 md:px-8 py-16">
       <div className="text-xs uppercase tracking-[0.3em] text-[#E63946]">Tienda oficial</div>
-      <h1 className="font-display text-5xl md:text-7xl text-white mt-2">Equipo de <span className="text-[#FFD700]">guerreros</span></h1>
+      <h1 className="font-display text-5xl md:text-7xl text-white mt-2">
+        <span className="sr-only">{settings.gym_name || 'Box de CrossFit'} - </span>
+        Equipo de <span className="text-[#FFD700]">guerreros</span>
+      </h1>
       <p className="text-white/60 mt-4 max-w-2xl">Guantes, vendas, sacos, ropa técnica. Todo lo que necesitas para entrenar como un campeón.</p>
 
       <div className="mt-10 flex flex-wrap gap-3 items-center" data-testid="products-filters">
@@ -112,7 +126,7 @@ export default function ProductsPage() {
                 {open.images?.length > 0 ? (
                   <div className="space-y-2 p-2">
                     {open.images.map((img, i) => (
-                      <img key={i} src={img} alt="" className="w-full h-64 object-cover rounded-sm" />
+                      <img key={i} src={img} alt={`${open.name} - imagen ${i + 1}`} className="w-full h-64 object-cover rounded-sm" />
                     ))}
                   </div>
                 ) : (

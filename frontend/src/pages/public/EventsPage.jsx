@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import api from "@/lib/api";
-import { fmtDate } from "@/lib/utils-app";
+import { fmtDate, useSettings } from "@/lib/utils-app";
 import { Calendar, MapPin, ExternalLink } from "lucide-react";
+import { useSEO } from "@/hooks/useSEO";
 
 function Countdown({ target }) {
   const [t, setT] = useState({ d: 0, h: 0, m: 0, s: 0 });
@@ -33,6 +34,18 @@ function Countdown({ target }) {
 
 export default function EventsPage() {
   const [events, setEvents] = useState([]);
+  const settings = useSettings();
+
+  const title = `Eventos y Combates - ${settings.gym_name || 'Box de CrossFit'}`;
+  const description = `Conoce los próximos eventos, torneos y seminarios de ${settings.gym_name || 'Box de CrossFit'}. ¡Únete a la acción!`;
+
+  useSEO({
+    title,
+    description,
+    canonical: window.location.origin + '/eventos',
+    ogImage: settings.logo
+  });
+
   useEffect(() => { api.get("/events").then(r => setEvents(r.data)).catch(() => {}); }, []);
   const upcoming = events.filter(e => new Date(e.date) >= new Date());
   const past = events.filter(e => new Date(e.date) < new Date());
@@ -40,7 +53,10 @@ export default function EventsPage() {
   return (
     <section className="max-w-7xl mx-auto px-4 md:px-8 py-16">
       <div className="text-xs uppercase tracking-[0.3em] text-[#E63946]">Calendario</div>
-      <h1 className="font-display text-5xl md:text-7xl text-white mt-2">Eventos & <span className="text-[#FFD700]">combates</span></h1>
+      <h1 className="font-display text-5xl md:text-7xl text-white mt-2">
+        <span className="sr-only">{settings.gym_name || 'Box de CrossFit'} - </span>
+        Eventos & <span className="text-[#FFD700]">combates</span>
+      </h1>
       <p className="text-white/60 mt-4 max-w-2xl">Torneos, seminarios y noches de boxeo. La adrenalina te espera.</p>
 
       <h2 className="font-display text-3xl text-white mt-12">Próximos</h2>

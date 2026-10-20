@@ -1,18 +1,66 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 
+const SETTINGS_CACHE_KEY = "gym_settings_cache";
+const SETTINGS_CACHE_TIMESTAMP_KEY = "gym_settings_cache_ts";
+const CACHE_MAX_AGE_MS = 1000 * 60 * 60; // 1 hour
+
+function getCachedSettings() {
+  try {
+    const cached = localStorage.getItem(SETTINGS_CACHE_KEY);
+    const timestamp = localStorage.getItem(SETTINGS_CACHE_TIMESTAMP_KEY);
+    if (cached && timestamp) {
+      const age = Date.now() - parseInt(timestamp, 10);
+      if (age < CACHE_MAX_AGE_MS) {
+        return JSON.parse(cached);
+      }
+    }
+  } catch (e) {
+    console.warn("Failed to read settings cache:", e);
+  }
+  return null;
+}
+
+function setCachedSettings(settings) {
+  try {
+    localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify(settings));
+    localStorage.setItem(SETTINGS_CACHE_TIMESTAMP_KEY, Date.now().toString());
+  } catch (e) {
+    console.warn("Failed to cache settings:", e);
+  }
+}
+
 export function useSettings() {
-  const [settings, setSettings] = useState({ gym_name: "BOXING GYM" });
+  const [settings, setSettings] = useState(() => {
+    return getCachedSettings() || { gym_name: "BOXING GYM" };
+  });
+
   useEffect(() => {
-    const load = () => api.get("/settings").then((r) => setSettings(r.data || {})).catch(() => {});
-    load();
-    const onUpdated = (e) => {
-      if (e?.detail) setSettings(e.detail);
-      else load();
+    const load = () => {
+      api.get("/settings")
+        .then((r) => {
+          const newSettings = r.data || {};
+          setSettings(newSettings);
+          setCachedSettings(newSettings);
+        })
+        .catch(() => {});
     };
+    
+    load();
+    
+    const onUpdated = (e) => {
+      if (e?.detail) {
+        setSettings(e.detail);
+        setCachedSettings(e.detail);
+      } else {
+        load();
+      }
+    };
+    
     window.addEventListener("app-settings-updated", onUpdated);
     return () => window.removeEventListener("app-settings-updated", onUpdated);
   }, []);
+  
   return settings;
 }
 

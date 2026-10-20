@@ -1351,6 +1351,58 @@ async def on_startup():
     await seed_settings()
 
 
+# ---------------- SEO Endpoints ----------------
+from fastapi.responses import Response, HTMLResponse
+from urllib.parse import urlparse
+
+@app.get("/robots.txt", response_class=Response)
+async def robots_txt(request: Request):
+    host = request.headers.get("host", "localhost")
+    scheme = "https" if request.headers.get("x-forwarded-proto") == "https" else request.url.scheme
+    sitemap_url = f"{scheme}://{host}/sitemap.xml"
+    
+    content = f"""User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /mi
+Disallow: /mi/
+Disallow: /api
+Disallow: /api/
+
+Sitemap: {sitemap_url}
+"""
+    return Response(content=content, media_type="text/plain")
+
+
+@app.get("/sitemap.xml", response_class=Response)
+async def sitemap_xml(request: Request):
+    host = request.headers.get("host", "localhost")
+    scheme = "https" if request.headers.get("x-forwarded-proto") == "https" else request.url.scheme
+    base_url = f"{scheme}://{host}"
+    
+    public_routes = [
+        "/",
+        "/productos",
+        "/eventos",
+        "/paquetes",
+        "/contacto",
+    ]
+    
+    urls = "\n".join([
+        f"  <url>\n    <loc>{base_url}{route}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>"
+        for route in public_routes
+    ])
+    
+    content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{urls}
+</urlset>
+"""
+    
+    return Response(content=content, media_type="application/xml")
+
+
 # ---------------- Mount ----------------
 app.include_router(api)
 
